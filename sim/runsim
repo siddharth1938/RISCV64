@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#==============================================================================
+# RISCV64 Simulation Launcher
+#==============================================================================
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+BLUE='\033[1;34m'
+NC='\033[0m'
+
+if [ $# -ne 1 ]; then
+    echo ""
+    echo "Usage:"
+    echo "./runsim <testbench>"
+    echo ""
+    echo "Example:"
+    echo "./runsim tb_pc"
+    echo "./runsim tb_instr_mem"
+    echo ""
+    exit 1
+fi
+
+TOP=$1
+
+TB=../tb/${TOP}.sv
+
+if [ ! -f "$TB" ]; then
+    echo -e "${RED}ERROR:${NC} Testbench not found."
+    echo "$TB"
+    exit 1
+fi
+
+echo "../tb/${TOP}.sv" > Flist.tb
+
+echo ""
+echo "========================================================="
+echo "              RISCV64 Simulation Environment"
+echo "========================================================="
+echo "Testbench : ${TOP}"
+echo ""
+
+make clean
+make build TOP=${TOP}
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}BUILD FAILED${NC}"
+    exit 1
+fi
+
+make run TOP=${TOP}
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}SIMULATION FAILED${NC}"
+    exit 1
+fi
+
+make wave TOP=${TOP}
+
+echo ""
+echo -e "${GREEN}Simulation Completed Successfully${NC}"
+echo ""
