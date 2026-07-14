@@ -8,13 +8,16 @@
 # NOTE:
 #   Files must always be listed in dependency order.
 #==============================================================================
-
 +incdir+../rtl/include
 
 ../rtl/include/riscv_pkg.sv
+../rtl/include/riscv_opcode_pkg.sv
+../rtl/include/riscv_funct_pkg.sv
 
 ../rtl/core/pc.sv
 ../rtl/core/instr_mem.sv
 ../rtl/core/fetch.sv
+../rtl/core/decoder.sv
+../rtl/core/imm_gen.sv
 
 ../rtl/top/riscv64_top.sv

@@ -42,3 +42,4 @@ wave:
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(WAVE_DIR)/*.vcd
+	
