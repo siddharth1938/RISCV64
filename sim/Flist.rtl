@@ -22,5 +22,6 @@
 ../rtl/core/imm_gen.sv
 ../rtl/core/regfile.sv
 ../rtl/core/alu.sv
+../rtl/core/control_unit.sv
 
 ../rtl/top/riscv64_top.sv
