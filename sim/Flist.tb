@@ -1,1 +1,1 @@
-../tb/tb_control_unit.sv
+../tb/tb_riscv64_top.sv

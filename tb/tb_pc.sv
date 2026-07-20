@@ -161,4 +161,4 @@ module tb_pc;
 
     end
 
-endmodule : tb_pc
+endmodule 

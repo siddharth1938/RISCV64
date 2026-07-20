@@ -69,7 +69,7 @@ module tb_instr_mem;
         // Fetch Instruction 0
         //--------------------------------------------------------------
 
-        addr_i = 64'h0000_0000;
+        addr_i = 64'h0000_0008;
         #10;
 
         $display("ADDR = %h | INSTR = %h", addr_i, instr_o);

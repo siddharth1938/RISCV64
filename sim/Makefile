@@ -21,6 +21,7 @@ VERILATOR_FLAGS =               \
 	-Wno-UNUSEDSIGNAL           \
 	-Wno-UNUSEDPARAM            \
 	--top-module $(TOP)         \
+	-Wno-SYNCASYNCNET			\
 	--Mdir $(BUILD_DIR)
 
 .PHONY: clean build run wave

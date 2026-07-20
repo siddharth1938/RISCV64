@@ -23,5 +23,13 @@
 ../rtl/core/regfile.sv
 ../rtl/core/alu.sv
 ../rtl/core/control_unit.sv
+../rtl/core/alu_mux.sv
+../rtl/core/data_mem.sv
+../rtl/core/wb_mux.sv
+../rtl/core/pc_mux.sv
+../rtl/core/branch_target_gen.sv
+../rtl/core/jalr_target_gen.sv
+../rtl/core/branch_comparator.sv
+../rtl/core/execute_stage.sv
 
 ../rtl/top/riscv64_top.sv

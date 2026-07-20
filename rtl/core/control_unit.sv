@@ -37,9 +37,18 @@ module control_unit
     // Control Outputs
     //--------------------------------------------------------------------------
 
-    output alu_op_t alu_op_o,
-    output logic    reg_write_o,
-    output logic    alu_src_o
+    output alu_op_t    alu_op_o,
+    output logic       reg_write_o,
+    output logic       alu_src_o,
+
+    output logic       mem_read_o,
+    output logic       mem_write_o,
+
+    output logic [1:0] wb_sel_o,
+
+    output logic       branch_o,
+    output logic       jump_o,
+    output logic       jalr_o
 
 );
 
@@ -53,9 +62,19 @@ module control_unit
         // Default Outputs
         //----------------------------------------------------------------------
 
-        alu_op_o    = ALU_ADD;
-        reg_write_o = 1'b0;
-        alu_src_o   = 1'b0;
+        alu_op_o     = ALU_ADD;
+
+        reg_write_o  = 1'b0;
+        alu_src_o    = 1'b0;
+
+        mem_read_o   = 1'b0;
+        mem_write_o  = 1'b0;
+
+        wb_sel_o     = 2'b00;
+
+        branch_o     = 1'b0;
+        jump_o       = 1'b0;
+        jalr_o       = 1'b0;
 
         //----------------------------------------------------------------------
         // Main Opcode Decode
@@ -71,6 +90,7 @@ module control_unit
 
                 reg_write_o = 1'b1;
                 alu_src_o   = 1'b0;
+                wb_sel_o    = 2'b00;
 
                 unique case (funct3_i)
 
@@ -113,6 +133,7 @@ module control_unit
 
                 reg_write_o = 1'b1;
                 alu_src_o   = 1'b1;
+                wb_sel_o    = 2'b00;
 
                 unique case (funct3_i)
 
@@ -148,14 +169,92 @@ module control_unit
             end
 
             //------------------------------------------------------------------
+            // LOAD Instructions
+            //------------------------------------------------------------------
+
+            OPCODE_LOAD: begin
+
+                reg_write_o = 1'b1;
+                alu_src_o   = 1'b1;
+
+                mem_read_o  = 1'b1;
+
+                wb_sel_o    = 2'b01;
+
+                alu_op_o    = ALU_ADD;
+
+            end
+
+            //------------------------------------------------------------------
+            // STORE Instructions
+            //------------------------------------------------------------------
+
+            OPCODE_STORE: begin
+
+                reg_write_o = 1'b0;
+                alu_src_o   = 1'b1;
+
+                mem_write_o = 1'b1;
+
+                alu_op_o    = ALU_ADD;
+
+            end
+
+            //------------------------------------------------------------------
+            // BRANCH Instructions
+            //------------------------------------------------------------------
+
+            OPCODE_BRANCH: begin
+
+                reg_write_o = 1'b0;
+                alu_src_o   = 1'b0;
+
+                branch_o    = 1'b1;
+
+                alu_op_o    = ALU_SUB;
+
+            end
+
+            //------------------------------------------------------------------
+            // JAL Instruction
+            //------------------------------------------------------------------
+
+            OPCODE_JAL: begin
+
+                reg_write_o = 1'b1;
+                wb_sel_o    = 2'b10;
+
+                jump_o      = 1'b1;
+
+                alu_op_o    = ALU_ADD;
+
+            end
+
+            //------------------------------------------------------------------
+            // JALR Instruction
+            //------------------------------------------------------------------
+
+            OPCODE_JALR: begin
+
+                reg_write_o = 1'b1;
+
+                alu_src_o   = 1'b1;
+
+                wb_sel_o    = 2'b10;
+
+                jalr_o      = 1'b1;
+
+                alu_op_o    = ALU_ADD;
+
+            end
+
+            //------------------------------------------------------------------
             // Default
             //------------------------------------------------------------------
 
             default: begin
 
-                alu_op_o    = ALU_ADD;
-                reg_write_o = 1'b0;
-                alu_src_o   = 1'b0;
+                // Defaults already assigned above.
 
             end
 
