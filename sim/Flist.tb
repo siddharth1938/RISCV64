@@ -1,1 +1,1 @@
-../tb/tb_riscv64_top.sv
+../tb/tb_branch_comparator.sv
