@@ -8,7 +8,16 @@
 //
 //   fetch (pc+imem) -> decoder -> {imm_gen, regfile, control_unit}
 //        -> execute_stage -> data_mem -> wb_mux -> regfile write-back
-//        -> pc_mux -> fetch (PC redirect)
+//        -> pc_control + pc_mux -> fetch (PC redirect)
+//
+//   pc_plus4 is computed inline here rather than via a dedicated module:
+//   pc.sv already computes pc_q+4 internally for its own next-state logic,
+//   but that value is never exposed externally, and since pc_control
+//   always drives load_pc_o = 1 (the mux is always in charge - pc.sv's
+//   internal fallback path never fires), the rest of the datapath
+//   (pc_mux's sequential case, wb_mux's JAL/JALR return address) still
+//   needs its own pc_plus4 value. A single assign covers that with no
+//   need for a separate module.
 //
 //------------------------------------------------------------------------------
 // Author       : Siddhartha Chinta
@@ -97,6 +106,7 @@ module riscv64_top
     // PC Redirect
     //==========================================================================
 
+    logic       load_pc;
     logic [1:0] pc_sel;
 
     //==========================================================================
@@ -108,8 +118,7 @@ module riscv64_top
         .clk_i      (clk_i),
         .rst_ni     (rst_ni),
 
-        .load_pc_i  (1'b1),          // pc_mux always supplies the correct
-                                      // next value (PC+4 included at pc_sel=00)
+        .load_pc_i  (load_pc),
         .next_pc_i  (next_pc),
 
         .pc_o       (pc),
@@ -117,7 +126,11 @@ module riscv64_top
 
     );
 
-    assign pc_plus4 = pc + xlen_t'(4);
+    //==========================================================================
+    // PC Plus-4  (computed inline - see header note)
+    //==========================================================================
+
+    assign pc_plus4 = pc + xlen_t'(64'd4);
 
     //==========================================================================
     // Instruction Decoder
@@ -249,24 +262,20 @@ module riscv64_top
     );
 
     //==========================================================================
-    // PC Selection Logic
-    //   (branch / jump / jalr are mutually exclusive - only one opcode class
-    //    is active per instruction - so priority order doesn't affect
-    //    correctness, only readability.)
+    // PC Control Unit
     //==========================================================================
 
-    always_comb begin
+    pc_control u_pc_control (
 
-        pc_sel = 2'b00;
+        .branch_i       (branch),
+        .jump_i         (jump),
+        .jalr_i         (jalr),
+        .branch_taken_i (branch_taken),
 
-        if (branch && branch_taken)
-            pc_sel = 2'b01;
-        else if (jump)
-            pc_sel = 2'b10;
-        else if (jalr)
-            pc_sel = 2'b11;
+        .load_pc_o      (load_pc),
+        .pc_sel_o       (pc_sel)
 
-    end
+    );
 
     //==========================================================================
     // Next PC Mux

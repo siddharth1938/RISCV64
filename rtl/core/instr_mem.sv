@@ -70,7 +70,7 @@ module instr_mem
         $display("[IMEM] Loading Program Memory...");
         $display("--------------------------------------------------");
 
-        $readmemh("../programs/matrix_mul_3x3.hex", mem);
+        $readmemh("../programs/program.hex", mem);
 
         $display("[IMEM] Program Successfully Loaded.");
         $display("--------------------------------------------------");

@@ -31,5 +31,7 @@
 ../rtl/core/jalr_target_gen.sv
 ../rtl/core/branch_comparator.sv
 ../rtl/core/execute_stage.sv
+../rtl/core/pc_control.sv
+
 
 ../rtl/top/riscv64_top.sv
