@@ -1,187 +1,54 @@
 #==============================================================================
-# Project      : RISCV64 Processor
-# File         : Makefile.xrun
-#
-# Description  :
-#   Cadence Xcelium Simulation Makefile
-#
-# Author       : Siddhartha Chinta
-# Target ISA   : RV64I
-# Version      : 1.0
+# RISCV64 Processor
+# Generic Xcelium Makefile
 #==============================================================================
 
+TOP ?= tb_pc
 
-###############################################################################
-# Include Configuration
-###############################################################################
+XRUN_DIR  = ../xrun
+LOG_DIR   = ../logs
+WAVE_DIR  = ../waves
 
-include config.mk
-include colors.mk
+RTL_FLIST = Flist.rtl
+TB_FLIST  = Flist.tb
 
+XRUN = xrun
 
-###############################################################################
-# Simulator
-###############################################################################
+XRUN_FLAGS =                 \
+	-64bit                   \
+	-sv                      \
+	-access +rwc             \
+	-linedebug               \
+	-clean                   \
+	-xmlibdirname $(XRUN_DIR)/$(TOP)
 
-XRUN := xrun
+.PHONY: clean build run wave
 
+build:
+	mkdir -p $(XRUN_DIR)
+	mkdir -p $(LOG_DIR)
+	mkdir -p $(WAVE_DIR)
 
-###############################################################################
-# Check Required Variables
-###############################################################################
-
-ifndef TOP
-$(error Please specify TOP=<testbench>)
-endif
-
-
-###############################################################################
-# Derived Paths
-###############################################################################
-
-XRUN_WORK  := $(XRUN_DIR)/$(TOP)
-
-LOG_FILE   := $(LOG_DIR)/$(TOP).log
-
-WAVE_FILE  := $(WAVE_DIR)/$(TOP).shm
-
-
-###############################################################################
-# Common Xcelium Flags
-###############################################################################
-
-XRUN_FLAGS =                    \
-        -64bit                  \
-        -sv                     \
-        -access +rwc            \
-        -linedebug              \
-        -messages               \
-        -clean                  \
-        -xmlibdirname $(XRUN_WORK)
-
-
-###############################################################################
-# Default Target
-###############################################################################
-
-.DEFAULT_GOAL := all
-
-.PHONY: all help compile run build wave clean
-
-
-###############################################################################
-# Default Flow
-###############################################################################
-
-all: build
-
-
-###############################################################################
-# Help
-###############################################################################
-
-help:
-	@echo ""
-	@echo "$(BOLD_CYAN)====================================================$(RESET)"
-	@echo "$(BOLD_CYAN)      RISCV64 Xcelium Simulation Environment$(RESET)"
-	@echo "$(BOLD_CYAN)====================================================$(RESET)"
-	@echo ""
-	@echo "Usage:"
-	@echo "  make -f Makefile.xrun build   TOP=<testbench>"
-	@echo "  make -f Makefile.xrun compile TOP=<testbench>"
-	@echo "  make -f Makefile.xrun run     TOP=<testbench>"
-	@echo "  make -f Makefile.xrun wave    TOP=<testbench>"
-	@echo "  make -f Makefile.xrun clean"
-	@echo ""
-	@echo "Example:"
-	@echo "  make -f Makefile.xrun build TOP=tb_pc"
-	@echo ""
-
-
-###############################################################################
-# Compile
-###############################################################################
-
-compile:
-
-	@echo ""
-	@echo "$(BOLD_BLUE)====================================================$(RESET)"
-	@echo "$(BOLD_BLUE)            RISCV64 XCELIUM COMPILATION$(RESET)"
-	@echo "$(BOLD_BLUE)====================================================$(RESET)"
-	@echo ""
-	@echo "Simulator : Xcelium"
-	@echo "Top       : $(TOP)"
-	@echo "RTL Flist : $(RTL_FLIST)"
-	@echo "TB  Flist : $(TB_FLIST)"
-	@echo "Work Dir  : $(XRUN_WORK)"
-	@echo "Log File  : $(LOG_FILE)"
-	@echo ""
-
-	@mkdir -p $(XRUN_WORK)
-	@mkdir -p $(LOG_DIR)
-	@mkdir -p $(WAVE_DIR)
-
-	$(XRUN)                             \
-	$(XRUN_FLAGS)                       \
-	+incdir+$(INCLUDE_DIR)              \
-	-f $(RTL_FLIST)                     \
-	-f $(TB_FLIST)                      \
-	-top $(TOP)                         \
-	-log $(LOG_FILE)
-
-
-###############################################################################
-# Run
-###############################################################################
+	$(XRUN) $(XRUN_FLAGS) \
+	-F $(RTL_FLIST) \
+	-F $(TB_FLIST) \
+	-top $(TOP) \
+	-log $(LOG_DIR)/$(TOP).log
 
 run:
-
-	@echo ""
-	@echo "$(BOLD_GREEN)====================================================$(RESET)"
-	@echo "$(BOLD_GREEN)              RUNNING SIMULATION$(RESET)"
-	@echo "$(BOLD_GREEN)====================================================$(RESET)"
-	@echo ""
-
-	$(XRUN)                 \
-	-R                      \
-	-xmlibdirname $(XRUN_WORK) \
-	-log $(LOG_FILE)
-
-
-###############################################################################
-# Build
-###############################################################################
-
-build: compile run
-
-
-###############################################################################
-# Waveform Viewer
-###############################################################################
+	$(XRUN) \
+	-R \
+	-xmlibdirname $(XRUN_DIR)/$(TOP) \
+	-log $(LOG_DIR)/$(TOP).log
 
 wave:
-
-	@echo ""
-	@echo "$(BOLD_BLUE)Opening SimVision...$(RESET)"
-	@echo ""
-
 	simvision &
 
-
-###############################################################################
-# Clean
-###############################################################################
-
 clean:
-
-	@echo ""
-	@echo "$(BOLD_RED)Cleaning Xcelium Generated Files...$(RESET)"
-	@echo ""
-
 	rm -rf $(XRUN_DIR)
 	rm -rf $(LOG_DIR)
-	rm -rf $(WAVE_DIR)
-
 	rm -rf xcelium.d
-	rm -rf *.history
-	rm -rf *.key
+	rm -rf INCA_libs
+	rm -f *.history
+	rm -f *.key
+	rm -f *.log
