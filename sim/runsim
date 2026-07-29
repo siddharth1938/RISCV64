@@ -1,62 +1,190 @@
 #!/bin/bash
 
 #==============================================================================
-# RISCV64 Simulation Launcher
+# Project      : RISCV64 Processor
+# File         : runsim
+#
+# Description  :
+#   Simulation launcher supporting Verilator and Cadence Xcelium.
+#
+# Author       : Siddhartha Chinta
+# Target ISA   : RV64I
+# Version      : 1.0
 #==============================================================================
+
+###############################################################################
+# ANSI Colors
+###############################################################################
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[1;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
-if [ $# -ne 1 ]; then
+###############################################################################
+# Usage
+###############################################################################
+
+usage()
+{
+    echo ""
+    echo "=========================================================="
+    echo "            RISCV64 Simulation Environment"
+    echo "=========================================================="
     echo ""
     echo "Usage:"
-    echo "./runsim <testbench>"
+    echo "  ./runsim <testbench>"
+    echo "  ./runsim <simulator> <testbench>"
     echo ""
-    echo "Example:"
-    echo "./runsim tb_pc"
-    echo "./runsim tb_instr_mem"
+    echo "Supported Simulators:"
+    echo "  xrun"
+    echo "  verilator"
     echo ""
+    echo "Examples:"
+    echo "  ./runsim tb_pc"
+    echo "  ./runsim xrun tb_pc"
+    echo "  ./runsim verilator tb_pc"
+    echo ""
+}
+
+###############################################################################
+# Parse Arguments
+###############################################################################
+
+if [ $# -eq 1 ]; then
+
+    SIMULATOR="xrun"
+    TOP=$1
+
+elif [ $# -eq 2 ]; then
+
+    SIMULATOR=$1
+    TOP=$2
+
+else
+
+    usage
     exit 1
+
 fi
 
-TOP=$1
+###############################################################################
+# Validate Simulator
+###############################################################################
+
+case "$SIMULATOR" in
+    xrun|verilator)
+        ;;
+    *)
+        echo -e "${RED}ERROR:${NC} Unsupported simulator: ${SIMULATOR}"
+        usage
+        exit 1
+        ;;
+esac
+
+###############################################################################
+# Validate Testbench
+###############################################################################
 
 TB=../tb/${TOP}.sv
 
 if [ ! -f "$TB" ]; then
+
     echo -e "${RED}ERROR:${NC} Testbench not found."
-    echo "$TB"
+    echo "       $TB"
     exit 1
+
 fi
+
+###############################################################################
+# Update Testbench File List
+###############################################################################
 
 echo "../tb/${TOP}.sv" > Flist.tb
 
+###############################################################################
+# Select Makefile
+###############################################################################
+
+if [ "$SIMULATOR" = "xrun" ]; then
+    MAKEFILE="Makefile.xrun"
+else
+    MAKEFILE="Makefile"
+fi
+
+###############################################################################
+# Banner
+###############################################################################
+
 echo ""
-echo "========================================================="
+echo "=========================================================="
 echo "              RISCV64 Simulation Environment"
-echo "========================================================="
-echo "Testbench : ${TOP}"
+echo "=========================================================="
+echo ""
+echo " Simulator : ${SIMULATOR}"
+echo " Testbench : ${TOP}"
 echo ""
 
-make clean
-make build TOP=${TOP}
+###############################################################################
+# Clean
+###############################################################################
+
+echo -e "${BLUE}Cleaning previous simulation...${NC}"
+
+make -f ${MAKEFILE} clean
 
 if [ $? -ne 0 ]; then
+    echo -e "${RED}Clean Failed${NC}"
+    exit 1
+fi
+
+###############################################################################
+# Build
+###############################################################################
+
+echo -e "${BLUE}Building design...${NC}"
+
+make -f ${MAKEFILE} build TOP=${TOP}
+
+if [ $? -ne 0 ]; then
+    echo ""
     echo -e "${RED}BUILD FAILED${NC}"
     exit 1
 fi
 
-make run TOP=${TOP}
+###############################################################################
+# Run (Verilator Only)
+###############################################################################
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}SIMULATION FAILED${NC}"
-    exit 1
+if [ "$SIMULATOR" = "verilator" ]; then
+
+    echo -e "${BLUE}Running simulation...${NC}"
+
+    make -f ${MAKEFILE} run TOP=${TOP}
+
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo -e "${RED}SIMULATION FAILED${NC}"
+        exit 1
+    fi
+
 fi
 
-make wave TOP=${TOP}
+###############################################################################
+# Wave Viewer
+###############################################################################
+
+echo -e "${BLUE}Opening waveform viewer...${NC}"
+
+make -f ${MAKEFILE} wave TOP=${TOP}
+
+###############################################################################
+# Success
+###############################################################################
 
 echo ""
-echo -e "${GREEN}Simulation Completed Successfully${NC}"
+echo -e "${GREEN}=============================================${NC}"
+echo -e "${GREEN} Simulation Completed Successfully${NC}"
+echo -e "${GREEN}=============================================${NC}"
 echo ""

@@ -1,0 +1,187 @@
+#==============================================================================
+# Project      : RISCV64 Processor
+# File         : Makefile.xrun
+#
+# Description  :
+#   Cadence Xcelium Simulation Makefile
+#
+# Author       : Siddhartha Chinta
+# Target ISA   : RV64I
+# Version      : 1.0
+#==============================================================================
+
+
+###############################################################################
+# Include Configuration
+###############################################################################
+
+include config.mk
+include colors.mk
+
+
+###############################################################################
+# Simulator
+###############################################################################
+
+XRUN := xrun
+
+
+###############################################################################
+# Check Required Variables
+###############################################################################
+
+ifndef TOP
+$(error Please specify TOP=<testbench>)
+endif
+
+
+###############################################################################
+# Derived Paths
+###############################################################################
+
+XRUN_WORK  := $(XRUN_DIR)/$(TOP)
+
+LOG_FILE   := $(LOG_DIR)/$(TOP).log
+
+WAVE_FILE  := $(WAVE_DIR)/$(TOP).shm
+
+
+###############################################################################
+# Common Xcelium Flags
+###############################################################################
+
+XRUN_FLAGS =                    \
+        -64bit                  \
+        -sv                     \
+        -access +rwc            \
+        -linedebug              \
+        -messages               \
+        -clean                  \
+        -xmlibdirname $(XRUN_WORK)
+
+
+###############################################################################
+# Default Target
+###############################################################################
+
+.DEFAULT_GOAL := all
+
+.PHONY: all help compile run build wave clean
+
+
+###############################################################################
+# Default Flow
+###############################################################################
+
+all: build
+
+
+###############################################################################
+# Help
+###############################################################################
+
+help:
+	@echo ""
+	@echo "$(BOLD_CYAN)====================================================$(RESET)"
+	@echo "$(BOLD_CYAN)      RISCV64 Xcelium Simulation Environment$(RESET)"
+	@echo "$(BOLD_CYAN)====================================================$(RESET)"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make -f Makefile.xrun build   TOP=<testbench>"
+	@echo "  make -f Makefile.xrun compile TOP=<testbench>"
+	@echo "  make -f Makefile.xrun run     TOP=<testbench>"
+	@echo "  make -f Makefile.xrun wave    TOP=<testbench>"
+	@echo "  make -f Makefile.xrun clean"
+	@echo ""
+	@echo "Example:"
+	@echo "  make -f Makefile.xrun build TOP=tb_pc"
+	@echo ""
+
+
+###############################################################################
+# Compile
+###############################################################################
+
+compile:
+
+	@echo ""
+	@echo "$(BOLD_BLUE)====================================================$(RESET)"
+	@echo "$(BOLD_BLUE)            RISCV64 XCELIUM COMPILATION$(RESET)"
+	@echo "$(BOLD_BLUE)====================================================$(RESET)"
+	@echo ""
+	@echo "Simulator : Xcelium"
+	@echo "Top       : $(TOP)"
+	@echo "RTL Flist : $(RTL_FLIST)"
+	@echo "TB  Flist : $(TB_FLIST)"
+	@echo "Work Dir  : $(XRUN_WORK)"
+	@echo "Log File  : $(LOG_FILE)"
+	@echo ""
+
+	@mkdir -p $(XRUN_WORK)
+	@mkdir -p $(LOG_DIR)
+	@mkdir -p $(WAVE_DIR)
+
+	$(XRUN)                             \
+	$(XRUN_FLAGS)                       \
+	+incdir+$(INCLUDE_DIR)              \
+	-f $(RTL_FLIST)                     \
+	-f $(TB_FLIST)                      \
+	-top $(TOP)                         \
+	-log $(LOG_FILE)
+
+
+###############################################################################
+# Run
+###############################################################################
+
+run:
+
+	@echo ""
+	@echo "$(BOLD_GREEN)====================================================$(RESET)"
+	@echo "$(BOLD_GREEN)              RUNNING SIMULATION$(RESET)"
+	@echo "$(BOLD_GREEN)====================================================$(RESET)"
+	@echo ""
+
+	$(XRUN)                 \
+	-R                      \
+	-xmlibdirname $(XRUN_WORK) \
+	-log $(LOG_FILE)
+
+
+###############################################################################
+# Build
+###############################################################################
+
+build: compile run
+
+
+###############################################################################
+# Waveform Viewer
+###############################################################################
+
+wave:
+
+	@echo ""
+	@echo "$(BOLD_BLUE)Opening SimVision...$(RESET)"
+	@echo ""
+
+	simvision &
+
+
+###############################################################################
+# Clean
+###############################################################################
+
+clean:
+
+	@echo ""
+	@echo "$(BOLD_RED)Cleaning Xcelium Generated Files...$(RESET)"
+	@echo ""
+
+	rm -rf $(XRUN_DIR)
+	rm -rf $(LOG_DIR)
+	rm -rf $(WAVE_DIR)
+
+	rm -rf xcelium.d
+	rm -rf *.history
+	rm -rf *.key
