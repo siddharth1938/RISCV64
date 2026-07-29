@@ -30,23 +30,22 @@ build:
 	mkdir -p $(WAVE_DIR)
 
 	$(XRUN) $(XRUN_FLAGS) \
-	-F $(RTL_FLIST) \
-	-F $(TB_FLIST) \
-	-top $(TOP) \
-	-log $(LOG_DIR)/$(TOP).log
+		-F $(RTL_FLIST) \
+		-F $(TB_FLIST) \
+		-top $(TOP) \
+		-input waves.tcl \
+		-log $(LOG_DIR)/$(TOP).log
 
 run:
-	$(XRUN) \
-	-R \
-	-xmlibdirname $(XRUN_DIR)/$(TOP) \
-	-log $(LOG_DIR)/$(TOP).log
+	@echo "Simulation already executed during build."
 
 wave:
-	simvision &
+	simvision $(WAVE_DIR)/waves.shm &
 
 clean:
 	rm -rf $(XRUN_DIR)
 	rm -rf $(LOG_DIR)
+	rm -rf $(WAVE_DIR)
 	rm -rf xcelium.d
 	rm -rf INCA_libs
 	rm -f *.history
