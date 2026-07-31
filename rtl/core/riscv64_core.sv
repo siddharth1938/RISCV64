@@ -6,14 +6,14 @@
 // Description  :
 //   Top-level integration of the RV64I single-cycle processor.
 //
-//   fetch (pc+imem) -> decoder -> {imm_gen, regfile, control_unit}
+//   fetch (pc_i+imem) -> decoder -> {imm_gen, regfile, control_unit}
 //        -> execute_stage -> data_mem -> wb_mux -> regfile write-back
 //        -> pc_control + pc_mux -> fetch (PC redirect)
 //
 //   pc_plus4 is computed inline here rather than via a dedicated module:
-//   pc.sv already computes pc_q+4 internally for its own next-state logic,
+//   pc_i.sv already computes pc_q+4 internally for its own next-state logic,
 //   but that value is never exposed externally, and since pc_control
-//   always drives load_pc_o = 1 (the mux is always in charge - pc.sv's
+//   always drives load_pc_o = 1 (the mux is always in charge - pc_i.sv's
 //   internal fallback path never fires), the rest of the datapath
 //   (pc_mux's sequential case, wb_mux's JAL/JALR return address) still
 //   needs its own pc_plus4 value. A single assign covers that with no
@@ -29,24 +29,41 @@
 
 `timescale 1ns/1ps
 
-module riscv64_top
+module riscv64_core
     import riscv_pkg::*;
     import riscv_opcode_pkg::*;
     import riscv_funct_pkg::*;
     import riscv_alu_pkg::*;
 (
     input logic clk_i,
-    input logic rst_ni
+    input logic rst_ni,
+    
+    //==========================================================
+    // Instruction Interface
+    //==========================================================
+    input  xlen_t  pc_i,
+    input  instr_t instruction_i,
+
+    output logic   load_pc_o,
+    output xlen_t  next_pc_o,
+
+    //==========================================================
+    // Data Memory Interface
+    //==========================================================
+    input  xlen_t  mem_data_i,
+
+    output xlen_t  mem_addr_o,
+    output xlen_t  mem_write_data_o,
+    output logic   mem_read_o,
+    output logic   mem_write_o
 );
 
     //==========================================================================
     // Program Counter / Fetch Signals
     //==========================================================================
 
-    xlen_t  pc;
-    xlen_t  next_pc;
     xlen_t  pc_plus4;
-    instr_t instruction;
+
 
     //==========================================================================
     // Decoder Outputs
@@ -96,41 +113,20 @@ module riscv64_top
     xlen_t jalr_target;
     logic  branch_taken;
 
-    //==========================================================================
-    // Data Memory
-    //==========================================================================
-
-    xlen_t mem_data;
-
+    
     //==========================================================================
     // PC Redirect
     //==========================================================================
 
-    logic       load_pc;
     logic [1:0] pc_sel;
 
-    //==========================================================================
-    // Fetch Stage (contains PC + Instruction Memory internally)
-    //==========================================================================
 
-    fetch u_fetch (
-
-        .clk_i      (clk_i),
-        .rst_ni     (rst_ni),
-
-        .load_pc_i  (load_pc),
-        .next_pc_i  (next_pc),
-
-        .pc_o       (pc),
-        .instr_o    (instruction)
-
-    );
 
     //==========================================================================
     // PC Plus-4  (computed inline - see header note)
     //==========================================================================
 
-    assign pc_plus4 = pc + xlen_t'(64'd4);
+    assign pc_plus4 = pc_i + xlen_t'(64'd4);
 
     //==========================================================================
     // Instruction Decoder
@@ -138,7 +134,7 @@ module riscv64_top
 
     decoder u_decoder (
 
-        .instr_i  (instruction),
+        .instr_i  (instruction_i),
 
         .opcode_o (opcode),
         .rd_o     (rd_addr),
@@ -155,7 +151,7 @@ module riscv64_top
 
     imm_gen u_imm_gen (
 
-        .instr_i (instruction),
+        .instr_i (instruction_i),
         .imm_o   (immediate)
 
     );
@@ -214,7 +210,7 @@ module riscv64_top
         .rs1_data_i      (rs1_data),
         .rs2_data_i      (rs2_data),
         .imm_i           (immediate),
-        .pc_i            (pc),
+        .pc_i            (pc_i),
 
         .alu_src_i       (alu_src),
         .alu_op_i        (alu_op),
@@ -227,23 +223,7 @@ module riscv64_top
 
     );
 
-    //==========================================================================
-    // Data Memory
-    //==========================================================================
 
-    data_mem u_data_mem (
-
-        .clk_i        (clk_i),
-
-        .addr_i       (alu_result),
-        .write_data_i (rs2_data),
-
-        .mem_read_i   (mem_read),
-        .mem_write_i  (mem_write),
-
-        .read_data_o  (mem_data)
-
-    );
 
     //==========================================================================
     // Write-Back Mux
@@ -252,7 +232,7 @@ module riscv64_top
     wb_mux u_wb_mux (
 
         .alu_result_i (alu_result),
-        .mem_data_i   (mem_data),
+        .mem_data_i   (mem_data_i),
         .pc_plus4_i   (pc_plus4),
 
         .wb_sel_i     (wb_sel),
@@ -272,7 +252,7 @@ module riscv64_top
         .jalr_i         (jalr),
         .branch_taken_i (branch_taken),
 
-        .load_pc_o      (load_pc),
+        .load_pc_o      (load_pc_o),
         .pc_sel_o       (pc_sel)
 
     );
@@ -290,8 +270,15 @@ module riscv64_top
 
         .pc_sel_i        (pc_sel),
 
-        .next_pc_o       (next_pc)
+        .next_pc_o       (next_pc_o)
 
     );
+    //==========================================================================
+    // External Data Memory Interface
+    //==========================================================================
 
-endmodule : riscv64_top
+    assign mem_addr_o       = alu_result;
+    assign mem_write_data_o = rs2_data;
+    assign mem_read_o       = mem_read;
+    assign mem_write_o      = mem_write;
+endmodule : riscv64_core

@@ -32,6 +32,6 @@
 ../rtl/core/branch_comparator.sv
 ../rtl/core/execute_stage.sv
 ../rtl/core/pc_control.sv
+../rtl/core/riscv64_core.sv
 
-
-../rtl/top/riscv64_top.sv
+../rtl/top/soc_top.sv
